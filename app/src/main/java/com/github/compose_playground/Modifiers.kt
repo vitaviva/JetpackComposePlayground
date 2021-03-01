@@ -46,30 +46,26 @@ fun Plain() {
 @Preview(showBackground = true)
 @Composable
 fun Decorated() {
-    Row(
-            modifier = Modifier
-                    .fillMaxWidth()
-                    .preferredHeightIn(min = 64.dp)
-                    .padding(8.dp)
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
-                    .padding(8.dp)
+    Row(modifier = Modifier
+            .fillMaxWidth()
+            .preferredHeightIn(min = 64.dp)
+            .padding(8.dp)
+            .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
+            .padding(8.dp)
 
     ) {
 
-        Avatar(
-                modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.CenterVertically)
+        Avatar(modifier = Modifier
+                .padding(4.dp)
+                .align(Alignment.CenterVertically)
         )
 
-        Info(
-                Modifier
-                        .weight(1f)
-                        .align(Alignment.CenterVertically)
+        Info(Modifier
+                .weight(1f)
+                .align(Alignment.CenterVertically)
         )
 
-        FollowBtn(
-                Modifier.align(Alignment.CenterVertically)
+        FollowBtn(Modifier.align(Alignment.CenterVertically)
         )
     }
 }

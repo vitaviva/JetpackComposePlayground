@@ -26,7 +26,11 @@ fun AnimateAsStateDemo() {
     var blue by remember { mutableStateOf(true) }
     val color by animateColorAsState(
         if (blue) Blue else Red,
-        animationSpec = spring(Spring.StiffnessVeryLow)
+        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
+        finishedListener = {
+            blue = !blue
+        }
+
     )
 
     Column(Modifier.padding(16.dp)) {
@@ -41,7 +45,7 @@ fun AnimateAsStateDemo() {
         Spacer(Modifier.height(16.dp))
         Box(
             Modifier
-                .preferredSize(128.dp)
+                .size(128.dp)
                 .background(color)
         )
     }
@@ -86,7 +90,7 @@ fun UpdateTransitionDemo() {
         Spacer(Modifier.height(16.dp))
         Box(
             Modifier
-                .preferredSize(size)
+                .size(size)
                 .background(color)
         )
     }
@@ -114,7 +118,7 @@ fun AnimateVisibilityDemo() {
         AnimatedVisibility(visible) {
             Box(
                 Modifier
-                    .preferredSize(128.dp)
+                    .size(128.dp)
                     .background(Blue)
             )
         }
@@ -134,7 +138,7 @@ fun AnimateContentSizeDemo() {
         Button(
             onClick = { expend = !expend }
         ) {
-            Text(if (expend) "Shink" else "Expand")
+            Text(if (expend) "Shrink" else "Expand")
         }
         Spacer(Modifier.height(16.dp))
 
@@ -167,7 +171,7 @@ fun CrossfadeDemo() {
 
     Column(Modifier.padding(16.dp)) {
 
-        Text("AnimateVisibilityDemo")
+        Text("CrossfadeDemo")
         Spacer(Modifier.height(16.dp))
 
         Button(onClick = {
@@ -181,21 +185,27 @@ fun CrossfadeDemo() {
 
         Spacer(Modifier.height(16.dp))
 
-        Crossfade(
-            current = scene,
-            animation = tween(durationMillis = 1000)
-        ) {
-            when (scene) {
-                DemoScene.Text ->
+
+        when (scene) {
+            DemoScene.Text ->
+                Crossfade(
+                    targetState = scene,
+                    animationSpec = tween(durationMillis = 1000)
+                ) {
                     Text(text = "Phone", fontSize = 32.sp)
-                DemoScene.Icon ->
+                }
+            DemoScene.Icon ->
+                Crossfade(
+                    targetState = scene,
+                    animationSpec = tween(durationMillis = 1000)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Phone,
                         null,
-                        modifier = Modifier.preferredSize(48.dp)
+                        modifier = Modifier.size(48.dp)
                     )
-            }
+                }
         }
-
     }
+
 }

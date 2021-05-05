@@ -1,7 +1,17 @@
 package com.github.compose_playground
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -13,6 +23,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.imageResource
@@ -31,7 +42,7 @@ fun Plain() {
     Row(modifier = Modifier.fillMaxWidth()) {
         Image(
                 modifier = Modifier.size(40.dp),
-                bitmap = imageResource(id = R.drawable.miku),
+                bitmap = ImageBitmap.imageResource(id = R.drawable.miku),
                 contentDescription = null, // decorative
         )
         Column(modifier = Modifier.weight(1f)) {
@@ -48,7 +59,7 @@ fun Plain() {
 fun Decorated() {
     Row(modifier = Modifier
             .fillMaxWidth()
-            .preferredHeightIn(min = 64.dp)
+            .heightIn(min = 64.dp)
             .padding(8.dp)
             .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
             .padding(8.dp)
@@ -118,7 +129,7 @@ fun Avatar(modifier: Modifier) {
                             shape = CircleShape,
                             border = BorderStroke(4.dp, SolidColor(Color.White))
                     ),
-            bitmap = imageResource(id = R.drawable.miku),
+            bitmap = ImageBitmap.imageResource(id = R.drawable.miku),
             contentDescription = null, // decorative
     )
 
@@ -134,7 +145,7 @@ fun FollowBtn(modifier: Modifier) {
             textAlign = TextAlign.Center,
             modifier =
             modifier
-                    .preferredWidth(80.dp)
+                    .width(80.dp)
                     .clickable(onClick = {})
                     .shadow(3.dp, shape = backgroundShape)
                     .clip(backgroundShape)

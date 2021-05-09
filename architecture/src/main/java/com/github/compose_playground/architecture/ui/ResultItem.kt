@@ -1,6 +1,7 @@
 package com.github.compose_playground.architecture.ui
 
 import android.graphics.Color
+import android.text.Html
 import android.widget.TextView
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +21,7 @@ import com.github.compose_playground.architecture.util.highlight
 @Composable
 fun ResultItem(title: String, desc: String = "", keyWorlds: String) {
 
-    Column(Modifier.padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 5.dp)) {
+    Column(Modifier.padding(top = 5.dp, bottom = 5.dp)) {
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -33,21 +34,30 @@ fun ResultItem(title: String, desc: String = "", keyWorlds: String) {
             }) {
 
         }
-        Text(
-            text = desc,
-            fontSize = 12.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
 
-        )
+        AndroidView(
+            modifier = Modifier
+                .fillMaxWidth(),
+            factory = {
+                TextView(it).apply {
+                    textSize = 12f
+                    text = Html.fromHtml(desc)
+                }
+            }) {
+
+        }
+
+//        Text(
+//            text = desc,
+//            fontSize = 12.sp,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(top = 2.dp)
+//
+//        )
     }
 
-    Divider(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(0.5.dp)
-    )
+
 }
 
 @Preview

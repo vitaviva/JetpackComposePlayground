@@ -77,10 +77,6 @@ fun NoArchitectureResultDestination(
         isLoading.value = false
     }
 
-    if (isLoading.value) {
-        CircularProgressIndicator()
-    } else {
-        SearchResultScreen(result, answer)
-    }
+    SearchResultScreen(result, isLoading.value , answer)
 
 }

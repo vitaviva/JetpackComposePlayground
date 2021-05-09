@@ -1,17 +1,16 @@
 package com.github.compose_playground.architecture
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigate
@@ -21,12 +20,9 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
-import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.HiltAndroidApp
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
@@ -34,84 +30,82 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-@HiltAndroidApp
-class JetpackMvvmApplication : Application()
+class MvvmActivity : AppCompatActivity() {
 
-@AndroidEntryPoint
-class JetpackMvvmActivity : AppCompatActivity() {
+    // To inject via dagger, pass the Provider into the nav graph
+    // and then run .get() on the provider to create an instance
+    private val mvvmViewModel = MvvmViewModel(DataRepository())
 
-    val viewModel: JetpackMvvmViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ComposePlaygroundTheme {
-                JetpackMvvmApp(viewModel)
+                MvvmApp(mvvmViewModel)
             }
         }
     }
 }
 
 @Composable
-fun JetpackMvvmApp(viewModel: JetpackMvvmViewModel) {
+fun MvvmApp(
+    mvvmViewModel: MvvmViewModel
+) {
     val navController = rememberNavController()
     NavHost(navController, startDestination = "question") {
         composable("question") {
-            JetpackMvvmQuestionDestination(
+            MvvmQuestionDestination(
+                mvvmViewModel = mvvmViewModel,
                 // You could pass the nav controller to further composables,
                 // but I like keeping nav logic in a single spot by using the hoisting pattern
                 // hoisting probably won't work as well in deep hierarchies,
                 // in which case CompositionLocal might be more appropriate
                 onConfirm = { navController.navigate("result") },
-                viewModel
             )
         }
         composable("result") {
-            JetpackMvvmResultDestination(viewModel)
+            MvvmResultDestination(
+                mvvmViewModel,
+            )
         }
     }
-
 }
 
-
 @Composable
-fun JetpackMvvmQuestionDestination(
-    onConfirm: () -> Unit,
-    jetpackMvvmViewModel: JetpackMvvmViewModel
+fun MvvmQuestionDestination(
+    mvvmViewModel: MvvmViewModel,
+    onConfirm: () -> Unit
 ) {
-
     LaunchedEffect(Unit) {
-        jetpackMvvmViewModel.navigateToResults
+        mvvmViewModel.navigateToResults
             .onEach { onConfirm() }
             .collect()
     }
 
     SearchBarScreen {
-        jetpackMvvmViewModel.confirmAnswer(it)
+        mvvmViewModel.confirmAnswer(it)
     }
 
 }
 
 @Composable
-fun JetpackMvvmResultDestination(
-    jetpackMvvmViewModel: JetpackMvvmViewModel
+fun MvvmResultDestination(
+    mvvmViewModel: MvvmViewModel
 ) {
 
-    val result by jetpackMvvmViewModel.result.collectAsState()
-    val isLoading by jetpackMvvmViewModel.isLoading.collectAsState()
+    val result by mvvmViewModel.result.collectAsState()
+    val isLoading by mvvmViewModel.isLoading.collectAsState()
+
+    SearchResultScreen(result, isLoading, mvvmViewModel.key.value)
 
 
-    SearchResultScreen(
-        result, isLoading, jetpackMvvmViewModel.key.value
-    )
 }
 
-@HiltViewModel
-class JetpackMvvmViewModel @Inject constructor(
-    private val answerService: DataRepository
-) : ViewModel() {
+class MvvmViewModel(
+    private val answerService: DataRepository,
+) {
 
+    private val coroutineScope = MainScope()
     private val _isLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
     private val _result: MutableStateFlow<List<ArticleBean>> = MutableStateFlow(emptyList())
@@ -119,21 +113,20 @@ class JetpackMvvmViewModel @Inject constructor(
     private val _key = MutableStateFlow("")
     val key = _key.asStateFlow()
 
-
     // See https://proandroiddev.com/android-singleliveevent-redux-with-kotlin-flow-b755c70bb055
     // For why channel > SharedFlow/StateFlow in this case
     private val _navigateToResults = Channel<Boolean>(Channel.BUFFERED)
     val navigateToResults = _navigateToResults.receiveAsFlow()
 
     fun confirmAnswer(answer: String) {
-        viewModelScope.launch {
-            _navigateToResults.send(true)
+        coroutineScope.launch {
             _isLoading.value = true
             _key.value = answer
-            delay(200)
             val result = withContext(Dispatchers.IO) { answerService.getArticlesList(answer) }
             _result.emit(result.data.datas)
+            _navigateToResults.send(true)
             _isLoading.value = false
         }
     }
 }
+

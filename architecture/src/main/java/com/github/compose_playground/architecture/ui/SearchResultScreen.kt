@@ -2,6 +2,7 @@ package com.github.compose_playground.architecture.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.compose_playground.architecture.data.ArticleBean
 
 @Preview
@@ -37,13 +39,19 @@ fun SearchResultScreen(
 
         Column(modifier = Modifier.padding(start = 10.dp, end = 10.dp)) {
 
-            Text("Result of searching $answer:")
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Result of searching [$answer]:",
+                fontSize = 20.sp
+            )
 
             Divider(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(bottom = 5.dp, top = 5.dp)
                     .height(0.5.dp)
             )
+            Spacer(modifier = Modifier.height(10.dp))
 
             Column(
                 modifier = Modifier

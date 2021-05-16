@@ -3,9 +3,7 @@ package com.github.compose_playground.architecture
 import android.app.Application
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +19,7 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
+import com.github.compose_playground.architecture.util.viewModel
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,21 +41,20 @@ class JetpackMvvmApplication : Application()
 @AndroidEntryPoint
 class JetpackMvvmActivity : AppCompatActivity() {
 
-    val viewModel: JetpackMvvmViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ComposePlaygroundTheme {
-                JetpackMvvmApp(viewModel)
+                JetpackMvvmApp()
             }
         }
     }
 }
 
 @Composable
-fun JetpackMvvmApp(viewModel: JetpackMvvmViewModel) {
+fun JetpackMvvmApp() {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "question") {
+    NavHost(navController, startDestination = "question", route = "root") {
         composable("question") {
             JetpackMvvmQuestionDestination(
                 // You could pass the nav controller to further composables,
@@ -64,11 +62,14 @@ fun JetpackMvvmApp(viewModel: JetpackMvvmViewModel) {
                 // hoisting probably won't work as well in deep hierarchies,
                 // in which case CompositionLocal might be more appropriate
                 onConfirm = { navController.navigate("result") },
-                viewModel
+                viewModel(navController, "root")
             )
         }
         composable("result") {
-            JetpackMvvmResultDestination(viewModel)
+
+            JetpackMvvmResultDestination(
+                viewModel(navController, "root")
+            )
         }
     }
 

@@ -19,6 +19,8 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
+import com.github.compose_playground.architecture.ui.theme.DestSearchBar
+import com.github.compose_playground.architecture.ui.theme.DestSearchResult
 import com.github.compose_playground.architecture.util.viewModel
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.HiltAndroidApp
@@ -29,7 +31,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,20 +55,21 @@ class JetpackMvvmActivity : AppCompatActivity() {
 @Composable
 fun JetpackMvvmApp() {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "question", route = "root") {
-        composable("question") {
-            JetpackMvvmQuestionDestination(
+
+    NavHost(navController, startDestination = DestSearchBar, route = "root") {
+        composable(DestSearchBar) {
+            JetpackMvvmSearchBarScreen(
                 // You could pass the nav controller to further composables,
                 // but I like keeping nav logic in a single spot by using the hoisting pattern
                 // hoisting probably won't work as well in deep hierarchies,
                 // in which case CompositionLocal might be more appropriate
-                onConfirm = { navController.navigate("result") },
+                onConfirm = { navController.navigate(DestSearchResult) },
                 viewModel(navController, "root")
             )
         }
-        composable("result") {
+        composable(DestSearchResult) {
 
-            JetpackMvvmResultDestination(
+            JetpackMvvmSearchResultScreen(
                 viewModel(navController, "root")
             )
         }
@@ -77,25 +79,26 @@ fun JetpackMvvmApp() {
 
 
 @Composable
-fun JetpackMvvmQuestionDestination(
+fun JetpackMvvmSearchBarScreen(
     onConfirm: () -> Unit,
     jetpackMvvmViewModel: JetpackMvvmViewModel
 ) {
 
     LaunchedEffect(Unit) {
         jetpackMvvmViewModel.navigateToResults
-            .onEach { onConfirm() }
-            .collect()
+            .collect {
+                onConfirm()
+            }
     }
 
     SearchBarScreen {
-        jetpackMvvmViewModel.confirmAnswer(it)
+        jetpackMvvmViewModel.searchKeyword(it)
     }
 
 }
 
 @Composable
-fun JetpackMvvmResultDestination(
+fun JetpackMvvmSearchResultScreen(
     jetpackMvvmViewModel: JetpackMvvmViewModel
 ) {
 
@@ -110,7 +113,7 @@ fun JetpackMvvmResultDestination(
 
 @HiltViewModel
 class JetpackMvvmViewModel @Inject constructor(
-    private val answerService: DataRepository
+    private val searchService: DataRepository
 ) : ViewModel() {
 
     private val _isLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -126,13 +129,13 @@ class JetpackMvvmViewModel @Inject constructor(
     private val _navigateToResults = Channel<Boolean>(Channel.BUFFERED)
     val navigateToResults = _navigateToResults.receiveAsFlow()
 
-    fun confirmAnswer(answer: String) {
+    fun searchKeyword(input: String) {
         viewModelScope.launch {
             _navigateToResults.send(true)
             _isLoading.value = true
-            _key.value = answer
+            _key.value = input
             delay(200)
-            val result = withContext(Dispatchers.IO) { answerService.getArticlesList(answer) }
+            val result = withContext(Dispatchers.IO) { searchService.getArticlesList(input) }
             _result.emit(result.data.datas)
             _isLoading.value = false
         }

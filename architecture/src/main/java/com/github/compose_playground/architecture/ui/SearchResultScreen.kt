@@ -25,7 +25,7 @@ import com.github.compose_playground.architecture.data.ArticleBean
 fun SearchResultScreen(
     result: List<ArticleBean> = emptyList(),
     isLoading: Boolean = false,
-    answer: String = ""
+    input: String = ""
 ) {
 
     if (isLoading) {
@@ -41,7 +41,7 @@ fun SearchResultScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Result of searching [$answer]:",
+                text = "Result of searching [$input]:",
                 fontSize = 20.sp
             )
 
@@ -60,7 +60,7 @@ fun SearchResultScreen(
             ) {
                 result.forEach { articleBean ->
 
-                    ResultItem(articleBean.title ?: "", articleBean.desc ?: "", answer)
+                    ResultItem(articleBean.title ?: "", articleBean.desc ?: "", input)
                 }
             }
 

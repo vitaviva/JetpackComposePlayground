@@ -3,14 +3,12 @@ package com.github.compose_playground.architecture
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.navigation.NavController
+import androidx.navigation.compose.KEY_ROUTE
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigate
@@ -20,14 +18,13 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
+import com.github.compose_playground.architecture.ui.theme.DestSearchBar
+import com.github.compose_playground.architecture.ui.theme.DestSearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -39,6 +36,7 @@ class MvvmActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             ComposePlaygroundTheme {
                 MvvmApp(mvvmViewModel)
@@ -52,19 +50,25 @@ fun MvvmApp(
     mvvmViewModel: MvvmViewModel
 ) {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "question") {
-        composable("question") {
-            MvvmQuestionDestination(
+
+    LaunchedEffect(Unit) {
+        with(mvvmViewModel) {
+            bindNavStack(navController)
+            destination
+                .collect {
+                    navController.navigate(it)
+                }
+        }
+    }
+
+    NavHost(navController, startDestination = DestSearchBar) {
+        composable(DestSearchBar) {
+            MvvmSearchBarScreen(
                 mvvmViewModel = mvvmViewModel,
-                // You could pass the nav controller to further composables,
-                // but I like keeping nav logic in a single spot by using the hoisting pattern
-                // hoisting probably won't work as well in deep hierarchies,
-                // in which case CompositionLocal might be more appropriate
-                onConfirm = { navController.navigate("result") },
             )
         }
-        composable("result") {
-            MvvmResultDestination(
+        composable(DestSearchResult) {
+            MvvmSearchResultScreen(
                 mvvmViewModel,
             )
         }
@@ -72,24 +76,17 @@ fun MvvmApp(
 }
 
 @Composable
-fun MvvmQuestionDestination(
-    mvvmViewModel: MvvmViewModel,
-    onConfirm: () -> Unit
+fun MvvmSearchBarScreen(
+    mvvmViewModel: MvvmViewModel
 ) {
-    LaunchedEffect(Unit) {
-        mvvmViewModel.navigateToResults
-            .onEach { onConfirm() }
-            .collect()
-    }
-
     SearchBarScreen {
-        mvvmViewModel.confirmAnswer(it)
+        mvvmViewModel.searchKeyword(it)
     }
 
 }
 
 @Composable
-fun MvvmResultDestination(
+fun MvvmSearchResultScreen(
     mvvmViewModel: MvvmViewModel
 ) {
 
@@ -102,7 +99,7 @@ fun MvvmResultDestination(
 }
 
 class MvvmViewModel(
-    private val answerService: DataRepository,
+    private val searchService: DataRepository,
 ) {
 
     private val coroutineScope = MainScope()
@@ -112,20 +109,26 @@ class MvvmViewModel(
     val result = _result.asStateFlow()
     private val _key = MutableStateFlow("")
     val key = _key.asStateFlow()
+    private val _destination = MutableStateFlow(DestSearchBar)
+    val destination = _destination.asStateFlow()
 
-    // See https://proandroiddev.com/android-singleliveevent-redux-with-kotlin-flow-b755c70bb055
-    // For why channel > SharedFlow/StateFlow in this case
-    private val _navigateToResults = Channel<Boolean>(Channel.BUFFERED)
-    val navigateToResults = _navigateToResults.receiveAsFlow()
 
-    fun confirmAnswer(answer: String) {
+    fun searchKeyword(input: String) {
         coroutineScope.launch {
+            _destination.value = DestSearchResult
             _isLoading.value = true
-            _key.value = answer
-            val result = withContext(Dispatchers.IO) { answerService.getArticlesList(answer) }
+            _key.value = input
+            val result = withContext(Dispatchers.IO) { searchService.getArticlesList(input) }
             _result.emit(result.data.datas)
-            _navigateToResults.send(true)
             _isLoading.value = false
+        }
+    }
+
+    fun bindNavStack(navController: NavController) {
+        navController.addOnDestinationChangedListener { _, _, arguments ->
+            run {
+                _destination.value = requireNotNull(arguments?.getString(KEY_ROUTE))
+            }
         }
     }
 }

@@ -16,13 +16,14 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
+import com.github.compose_playground.architecture.ui.theme.DestSearchBar
+import com.github.compose_playground.architecture.ui.theme.DestSearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,19 +47,16 @@ fun MviApp(
     mviViewModel: MviViewModel
 ) {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "question") {
-        composable("question") {
-            MviQuestionDestination(
+
+    NavHost(navController, startDestination = DestSearchBar) {
+        composable(DestSearchBar) {
+            MviSearchBarScreen(
                 mviViewModel = mviViewModel,
-                // You could pass the nav controller to further composables,
-                // but I like keeping nav logic in a single spot by using the hoisting pattern
-                // hoisting probably won't work as well in deep hierarchies,
-                // in which case CompositionLocal might be more appropriate
-                onConfirm = { navController.navigate("result") },
+                onConfirm = { navController.navigate(DestSearchResult) },
             )
         }
-        composable("result") {
-            MviResultDestination(
+        composable(DestSearchResult) {
+            MviSearchResultScreen(
                 mviViewModel,
             )
         }
@@ -66,28 +64,27 @@ fun MviApp(
 }
 
 @Composable
-fun MviQuestionDestination(
+fun MviSearchBarScreen(
     mviViewModel: MviViewModel,
     onConfirm: () -> Unit
 ) {
     LaunchedEffect(Unit) {
         mviViewModel.navigateToResults
-            .onEach {
+            .collect {
                 when (it) {
                     MviViewModel.OneShotEvent.NavigateToResults -> onConfirm()
                 }
             }
-            .collect()
     }
 
     SearchBarScreen {
-        mviViewModel.onAction(MviViewModel.UiAction.AnswerConfirmed(it))
+        mviViewModel.onAction(MviViewModel.UiAction.SearchInput(it))
     }
 
 }
 
 @Composable
-fun MviResultDestination(
+fun MviSearchResultScreen(
     mviViewModel: MviViewModel
 ) {
     val viewState by mviViewModel.viewState.collectAsState()
@@ -99,7 +96,7 @@ fun MviResultDestination(
 }
 
 class MviViewModel(
-    private val answerService: DataRepository,
+    private val searchService: DataRepository,
 ) {
 
     private val coroutineScope = MainScope()
@@ -114,13 +111,13 @@ class MviViewModel(
 
     fun onAction(uiAction: UiAction) {
         when (uiAction) {
-            is UiAction.AnswerConfirmed -> {
+            is UiAction.SearchInput -> {
                 coroutineScope.launch {
                     _viewState.value = _viewState.value.copy(isLoading = true)
                     val result =
-                        withContext(Dispatchers.IO) { answerService.getArticlesList(uiAction.answer) }
+                        withContext(Dispatchers.IO) { searchService.getArticlesList(uiAction.input) }
                     _viewState.value =
-                        _viewState.value.copy(result = result.data.datas, key = uiAction.answer)
+                        _viewState.value.copy(result = result.data.datas, key = uiAction.input)
                     _navigateToResults.send(OneShotEvent.NavigateToResults)
                     _viewState.value = _viewState.value.copy(isLoading = false)
                 }
@@ -139,6 +136,6 @@ class MviViewModel(
     }
 
     sealed class UiAction {
-        class AnswerConfirmed(val answer: String) : UiAction()
+        class SearchInput(val input: String) : UiAction()
     }
 }

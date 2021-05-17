@@ -3,7 +3,6 @@ package com.github.compose_playground.architecture
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +20,8 @@ import com.github.compose_playground.architecture.data.DataRepository
 import com.github.compose_playground.architecture.ui.SearchBarScreen
 import com.github.compose_playground.architecture.ui.SearchResultScreen
 import com.github.compose_playground.architecture.ui.theme.ComposePlaygroundTheme
+import com.github.compose_playground.architecture.ui.theme.DestSearchBar
+import com.github.compose_playground.architecture.ui.theme.DestSearchResult
 import com.github.compose_playground.architecture.ui.transparentStatusBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,29 +42,28 @@ class NoArchitectureActivity : AppCompatActivity() {
 @Composable
 fun NoArchitectureApp() {
     val navController = rememberNavController()
-    NavHost(navController, startDestination = "question") {
-        composable("question") {
+    NavHost(navController, startDestination = DestSearchBar) {
+        composable(DestSearchBar) {
             SearchBarScreen(
                 onConfirm = {
-                    val validatedAnswer = if (it.isBlank()) "wrong answer" else it
-                    navController.navigate("result/$validatedAnswer")
+                    navController.navigate("${DestSearchResult}/$it")
                 }
             )
         }
         composable(
-            "result/{answer}",
-            listOf(navArgument("answer") { type = NavType.StringType }),
+            "${DestSearchResult}/{key}",
+            listOf(navArgument("key") { type = NavType.StringType }),
         ) {
-            NoArchitectureResultDestination(
-                answer = it.arguments?.getString("answer") ?: ""
+            NoArchitectureResultScreen(
+                keyword = it.arguments?.getString("key") ?: ""
             )
         }
     }
 }
 
 @Composable
-fun NoArchitectureResultDestination(
-    answer: String
+fun NoArchitectureResultScreen(
+    keyword: String
 ) {
 
     val isLoading = remember { mutableStateOf(false) }
@@ -73,10 +73,10 @@ fun NoArchitectureResultDestination(
     var result: List<ArticleBean> by remember { mutableStateOf(emptyList()) }
     LaunchedEffect(Unit) {
         isLoading.value = true
-        result = withContext(Dispatchers.IO) { dataRepository.getArticlesList(answer).data.datas }
+        result = withContext(Dispatchers.IO) { dataRepository.getArticlesList(keyword).data.datas }
         isLoading.value = false
     }
 
-    SearchResultScreen(result, isLoading.value , answer)
+    SearchResultScreen(result, isLoading.value , keyword)
 
 }

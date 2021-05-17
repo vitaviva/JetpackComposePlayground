@@ -29,7 +29,7 @@ import com.github.compose_playground.architecture.R
 @Preview
 @Composable
 fun SearchBarScreen(
-    onConfirm: (answer: String) -> Unit = {}
+    onConfirm: (input: String) -> Unit = {}
 ) {
 
     Column(

@@ -8,4 +8,5 @@ dependencyResolutionManagement {
 rootProject.name = "Compose Playground"
 include ':app'
 include ':architecture'
+include ':bloom'
 include ':compose_node_exp'
